@@ -1,6 +1,6 @@
 @StageSeeker_HostAddress = http://localhost:5185
 
-GET {{StageSeeker_HostAddress}}/weatherforecast/
+GET {{StageSeeker_HostAddress}}/users/
 Accept: application/json
 
 ###

@@ -9,6 +9,7 @@ public static class UserService {
             new User {Id = 1, Username = "Lavon", Password = "Concert"}
         };
     }
+    
     // Routes
-    // public static List<UserService> GetAll() => Users;
+    public static List<User> GetAll() => Users;
 }
