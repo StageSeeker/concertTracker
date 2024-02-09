@@ -5,7 +5,7 @@ using StageSeeker.Services;
 namespace StageSeeker.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("watchlist")]
 public class WatchListController : ControllerBase
 {
     private readonly WatchListService _watchService;
@@ -14,14 +14,14 @@ public class WatchListController : ControllerBase
         _watchService = watchService;
     }
 
-    [HttpGet("watchlist")]
+    [HttpGet]
     public async Task<List<WatchList>> Get()
     {
         return await _watchService.GetWatchAsync();
 
     }
 
-    [HttpGet("watchlist/{id}")]
+    [HttpGet("{id}")]
     public async Task<ActionResult<WatchList>> Get(int id)
     {
         var concert = await _watchService.GetWatchAsync(id);
@@ -32,14 +32,14 @@ public class WatchListController : ControllerBase
         return concert;
     }
 
-    [HttpPost("watchlist")]
-    public async Task<IActionResult> Post(WatchList new_watchList)
+    [HttpPost]
+    public async Task<IActionResult> Post([FromBody] WatchList new_watchList)
     {
         await _watchService.CreateAsync(new_watchList);
         return CreatedAtAction(nameof(Get), new { watchID = new_watchList.WatchId }, new_watchList);
     }
 
-    [HttpPut("watchlist/{id}")]
+    [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, WatchList update_WatchList)
     {
         var concert = await _watchService.GetWatchAsync(id);
@@ -54,7 +54,7 @@ public class WatchListController : ControllerBase
         return StatusCode(201);
     }
 
-    [HttpDelete("watchlist/{id}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
         var concert = await _watchService.GetWatchAsync(id);
