@@ -1,7 +1,20 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+
 namespace StageSeeker.Models;
 
 public class User {
-    public long Id {get; set;}
-    public required string Username {get; set;}
-    public required string Password {get; set;}
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? Id { get; set; }
+
+    [BsonElement("user_id")]
+    public int UserId { get; set; }
+
+    [BsonElement("username")]
+    public required string Username { get; set; }
+    
+    [BsonElement("password")]
+    public required string Password { get; set; }
 }
