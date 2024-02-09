@@ -8,7 +8,7 @@ public class UsersService
 {
     private readonly IMongoCollection<User> _usersCollection;
 
-    public UsersService (IOptions<StageSeekerDatabaseSettings> stageSeekerDatabaseSettings) 
+    public UsersService (IOptions<MongoDBSettings> stageSeekerDatabaseSettings) 
     {
         var mongoClient = new MongoClient(
              stageSeekerDatabaseSettings.Value.ConnectionString);
@@ -17,7 +17,7 @@ public class UsersService
             stageSeekerDatabaseSettings.Value.DatabaseName);
 
         _usersCollection = mongoDatabase.GetCollection<User>(
-            stageSeekerDatabaseSettings.Value.BooksCollectionName);
+            stageSeekerDatabaseSettings.Value.UserCollectionName);
     }
 
     public async Task<List<User>> GetAsync() =>

@@ -8,7 +8,7 @@ builder.Services.AddControllers();
 // Add services to the container.
 builder.Services.Configure<MongoDBSettings>(
     builder.Configuration.GetSection("MongoDataBase"));
-builder.Services.AddSingleton<UserService>();
+builder.Services.AddSingleton<UsersService>();
 builder.Services.AddSingleton<WatchListService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
