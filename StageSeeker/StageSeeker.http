@@ -4,3 +4,27 @@ GET {{StageSeeker_HostAddress}}/users/
 Accept: application/json
 
 ###
+
+GET {{StageSeeker_HostAddress}}/watchlist/
+Accept: application/json
+
+###
+
+GET {{StageSeeker_HostAddress}}/watchlist/{id}
+Accept: application/json
+
+###
+
+POST {{StageSeeker_HostAddress}}/watchlist/
+Accept: application/json
+
+###
+
+PUT {{StageSeeker_HostAddress}}/watchlist/{id}
+Accept: application/json
+
+###
+
+DELETE {{StageSeeker_HostAddress}}/watchlist/{id}
+
+###
