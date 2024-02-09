@@ -10,7 +10,7 @@ Accept: application/json
 
 ###
 
-GET {{StageSeeker_HostAddress}}/watchlist/{id}
+GET {{StageSeeker_HostAddress}}/{id}
 Accept: application/json
 
 ###
