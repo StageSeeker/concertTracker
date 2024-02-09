@@ -1,9 +1,15 @@
 using StageSeeker.Controllers;
+using StageSeeker.Models;
+using StageSeeker.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 
 // Add services to the container.
+builder.Services.Configure<MongoDBSettings>(
+    builder.Configuration.GetSection("MongoDataBase"));
+builder.Services.AddSingleton<UserService>();
+builder.Services.AddSingleton<WatchListService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
