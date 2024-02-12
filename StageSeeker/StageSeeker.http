@@ -5,6 +5,14 @@ Accept: application/json
 
 ###
 
+GET {{StageSeeker_HostAddress}}/users/{id}
+Accept: application/json
+
+###
+POST {{StageSeeker_HostAddress}}/users
+Accept: application/json
+###
+
 GET {{StageSeeker_HostAddress}}/watchlist/
 Accept: application/json
 
