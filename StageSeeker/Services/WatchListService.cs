@@ -1,6 +1,10 @@
 using StageSeeker.Models;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using MongoDB.Bson;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace StageSeeker.Services;
 public class WatchListService
@@ -55,17 +59,22 @@ public class WatchListService
     }
 }
     // Update WatchList
-  public async Task UpdateAsync(int id, bool isAttending)
+ public async Task UpdateAsync(int id, Dictionary<string, object> updatedFields)
 {
-    // Use Builders to filter the WatchList by WatchId
     var filter = Builders<WatchList>.Filter.Eq(x => x.WatchId, id);
+    var update = Builders<WatchList>.Update.Combine();
 
-    // Create the update operation for IsAttending
-    var update = Builders<WatchList>.Update.Set(w => w.IsAttending, isAttending);
+    foreach (var field in updatedFields)
+    {
+        var jValue = JToken.FromObject(field.Value);
+        var bsonValue = BsonTypeMapper.MapToBsonValue(jValue.ToObject<object>(JsonSerializer.CreateDefault()));
+        update = update.Set(field.Key, bsonValue);
+    }
 
-    // Perform the update
     await _watchListCollection.UpdateOneAsync(filter, update);
 }
+
+
 
     // Remove WatchList
     public async Task RemoveAsync(int id) {

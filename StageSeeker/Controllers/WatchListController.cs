@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
+using Newtonsoft.Json.Linq;
 using StageSeeker.Models;
 using StageSeeker.Services;
 
@@ -39,20 +41,21 @@ public class WatchListController : ControllerBase
         return CreatedAtAction(nameof(Get), new { watchID = new_watchList.WatchId }, new_watchList);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, WatchList update_WatchList)
+[HttpPatch("{id}")]
+public async Task<IActionResult> Update(int id, [FromBody] Dictionary<string, object> updatedFields)
+{
+    var watchList = await _watchService.GetWatchAsync(id);
+    if (watchList is null)
     {
-        var concert = await _watchService.GetWatchAsync(id);
-        if (concert is null)
-        {
-            return NotFound();
-        }
-
-        // Extract attendance status from WatchList
-        bool isAttending = update_WatchList.IsAttending;
-        await _watchService.UpdateAsync(id, isAttending);
-        return StatusCode(201);
+        return NotFound();
     }
+    
+    // Call the service method with the updated fields
+    await _watchService.UpdateAsync(id, updatedFields);
+
+    return NoContent(); // 204 No Content
+}
+
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
