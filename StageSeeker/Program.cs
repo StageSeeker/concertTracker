@@ -1,7 +1,16 @@
+using Auth0.AspNetCore.Authentication;
 using StageSeeker.Controllers;
 using StageSeeker.Models;
 using StageSeeker.Services;
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddAuth0WebAppAuthentication(options =>
+{
+    options.Domain = builder.Configuration["Auth0:Domain"];
+    options.ClientId = builder.Configuration["Auth0:ClientId"];
+    options.ClientSecret = builder.Configuration["Auth0:ClientSecret"];
+    options.CallbackPath = new PathString("/callback");
+});
+builder.Services.AddControllersWithViews();
 builder.Services.AddControllers();
 
 
@@ -26,6 +35,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 
 app.MapControllers();
