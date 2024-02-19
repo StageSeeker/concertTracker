@@ -7,10 +7,10 @@ namespace StageSeeker.ViewModels
 {
     public class UserProfileViewModel
     {
-        public string EmailAddress { get; set; }
+        public string EmailAddress { get; set; } =  null!;
 
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
-        public string ProfileImage { get; set; }
+        public string ProfileImage { get; set; } = null!;
     }
 }

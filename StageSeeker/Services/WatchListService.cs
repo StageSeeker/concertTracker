@@ -1,10 +1,8 @@
 using StageSeeker.Models;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
-using MongoDB.Bson;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using StageSeeker.Utilities;
 
 namespace StageSeeker.Services;
 public class WatchListService
@@ -41,50 +39,67 @@ public class WatchListService
     }
     //Get One WatchList
     public async Task<WatchList?> GetWatchAsync(int id)
-{
-    var cursor = _watchListCollection.Find(x => x.WatchId == id);
-    return await cursor.FirstOrDefaultAsync();
-}
+    {
+        var cursor = _watchListCollection.Find(x => x.WatchId == id);
+        return await cursor.FirstOrDefaultAsync();
+    }
     // Create WatchList
     public async Task CreateAsync(WatchList new_watchList)
-{
-    try
     {
-        await _watchListCollection.InsertOneAsync(new_watchList);
+        try
+        {
+            await _watchListCollection.InsertOneAsync(new_watchList);
+        }
+        catch (MongoException ex)
+        {
+            // Handle errors during watch list retrieval
+            throw new Exception("Failed to to create watch lists: " + ex.Message);
+        }
     }
-    catch (MongoException ex)
-    {
-        // Handle errors during watch list retrieval
-        throw new Exception("Failed to to create watch lists: " + ex.Message);
-    }
-}
     // Update WatchList
- public async Task UpdateAsync(int id, Dictionary<string, object> updatedFields)
-{
-    var filter = Builders<WatchList>.Filter.Eq(x => x.WatchId, id);
-    var update = Builders<WatchList>.Update.Combine();
-
-    foreach (var field in updatedFields)
+    public async Task UpdateAsync(int id, [FromBody] WatchList updateList)
     {
-        var jValue = JToken.FromObject(field.Value);
-        var bsonValue = BsonTypeMapper.MapToBsonValue(jValue.ToObject<object>(JsonSerializer.CreateDefault()));
-        update = update.Set(field.Key, bsonValue);
+        var filter = Builders<WatchList>.Filter.Eq(x => x.WatchId, id);
+        var update = Builders<WatchList>.Update.Combine();
+
+        // Conditionally sets fields based on null inputs
+        // String fields needs to be emtpty "" to remain the same. 
+        if (!string.IsNullOrEmpty(updateList.ArtistName))
+        {
+            update = update.Set(x => x.ArtistName, updateList.ArtistName);
+        }
+        if (!string.IsNullOrEmpty(updateList.ConcertName))
+        {
+            update = update.Set(x => x.ConcertName, updateList.ConcertName);
+        }
+        if (!string.IsNullOrEmpty(updateList.Venue))
+        {
+            update = update.Set(x => x.Venue, updateList.ConcertName);
+        }
+        // Price field can be 0 to keep the same value or null(empty)
+        if (updateList.Price != 0)
+        {
+            update = update.Set(x => x.Price, updateList.Price);
+        }
+        if (updateList.IsAttending)
+        {
+            update = update.Set(x => x.IsAttending, updateList.IsAttending);
+        }
+        await _watchListCollection.UpdateOneAsync(filter, update);
     }
-
-    await _watchListCollection.UpdateOneAsync(filter, update);
-}
-
-
 
     // Remove WatchList
-    public async Task RemoveAsync(int id) {
-        try {
-            await _watchListCollection.DeleteOneAsync(x=>x.WatchId == id);
-        } catch (MongoException ex)
+    public async Task RemoveAsync(int id)
     {
-        // Handle errors during watch list retrieval
-        throw new Exception("Failed to to remove watch lists: " + ex.Message);
-    }
+        try
+        {
+            await _watchListCollection.DeleteOneAsync(x => x.WatchId == id);
+        }
+        catch (MongoException ex)
+        {
+            // Handle errors during watch list retrieval
+            throw new Exception("Failed to to remove watch lists: " + ex.Message);
+        }
     }
 }
 

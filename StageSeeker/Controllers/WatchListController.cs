@@ -42,7 +42,7 @@ public class WatchListController : ControllerBase
     }
 
 [HttpPatch("{id}")]
-public async Task<IActionResult> Update(int id, [FromBody] Dictionary<string, object> updatedFields)
+public async Task<IActionResult> Update(int id, [FromBody] WatchList updatedValues)
 {
     var watchList = await _watchService.GetWatchAsync(id);
     if (watchList is null)
@@ -51,7 +51,7 @@ public async Task<IActionResult> Update(int id, [FromBody] Dictionary<string, ob
     }
     
     // Call the service method with the updated fields
-    await _watchService.UpdateAsync(id, updatedFields);
+    await _watchService.UpdateAsync(id, updatedValues);
 
     return NoContent(); // 204 No Content
 }

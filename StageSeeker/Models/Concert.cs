@@ -22,8 +22,6 @@ public class Concert {
     public required Stats Prices {get; set;}
     [JsonProperty("performers")]
     public required List<Performer> Performers {get; set;}
-    [JsonProperty("artistNames")]
-    public string[] ArtistNames {get; set;} = null!;
 }
 
 public class Venue {
@@ -37,8 +35,12 @@ public class Stats {
 }
 
 public class Performer {
-    [JsonProperty("short_name")]
+    [JsonProperty("name")]
     public required string Artist {get; set;}
+    [JsonProperty("url")]
+    public string TicketsURL {get;set;} = null!;
+    [JsonProperty("num_upcoming_events")]
+    public int NumberOfEvents {get; set;}
 }
 
 
