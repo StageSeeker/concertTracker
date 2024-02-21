@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using StageSeeker.Models;
-using StageSeeker.Services;
 
 namespace StageSeeker.Services;
 

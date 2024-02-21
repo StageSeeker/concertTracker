@@ -4,7 +4,6 @@ using Auth0.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
-using StageSeeker.ViewModels;
 
 [ApiController]
 [Route("protected")]
