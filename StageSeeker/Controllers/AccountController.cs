@@ -1,14 +1,24 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Auth0.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Auth0.ManagementApi;
+using MongoDB.Driver;
+using StageSeeker.Models;
+using StageSeeker.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using StageSeeker.Services;
 
 [ApiController]
 [Route("protected")]
 public class AccountController : Controller
 {
+  private readonly IConfiguration? _configuration;
+  private readonly UsersService? _userService;
 [HttpGet("/")]
 public ActionResult Home() {
   return Ok("Log into StageSeeker using /login or protected/login endpoint");
@@ -47,6 +57,21 @@ public IActionResult RedirectToProfile() {
       Auth0Constants.AuthenticationScheme,
       authenticationProperties
     );
+
+    var name = User?.Identity?.Name;
+    var email = User?.Claims.FirstOrDefault(c=>c.Type == ClaimTypes.Email)?.Value;
+
+    var newUser = new User {
+      UserId = 0,
+      Username = email,
+      Password ="password123",
+      WatchList = new WatchList()
+    };
+    try {
+      await _userService.CreateAsync(newUser);
+    } catch ( Exception ex) {
+      Console.Write(ex.Message);
+    }
   }
   
   [HttpGet("profile")]
