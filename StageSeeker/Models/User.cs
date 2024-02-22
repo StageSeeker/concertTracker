@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -12,11 +13,17 @@ public class User {
     [BsonElement("user_id")]
     public int UserId { get; set; }
 
+    
     [BsonElement("username")]
     public required string Username { get; set; }
+
+    [BsonElement("email")]
+    public string Email {get; set;} = null!;
     
     [BsonElement("password")]
     public required string Password { get; set; }
+
+    public string ProfilePic {get; set;} = null!;
 
     [BsonElement("WatchList")]
     public WatchList WatchList {get; set;} = new WatchList();

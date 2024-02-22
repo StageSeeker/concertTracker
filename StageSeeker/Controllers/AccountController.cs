@@ -1,17 +1,12 @@
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Auth0.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
-using Auth0.ManagementApi;
 using MongoDB.Driver;
 using StageSeeker.Models;
 using StageSeeker.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using StageSeeker.Services;
 
 [ApiController]
 [Route("protected")]
@@ -19,6 +14,9 @@ public class AccountController : Controller
 {
   private readonly IConfiguration? _configuration;
   private readonly UsersService? _userService;
+public AccountController(UsersService usersService) {
+  _userService = usersService;
+}
 [HttpGet("/")]
 public ActionResult Home() {
   return Ok("Log into StageSeeker using /login or protected/login endpoint");
@@ -57,35 +55,39 @@ public IActionResult RedirectToProfile() {
       Auth0Constants.AuthenticationScheme,
       authenticationProperties
     );
-
-    var name = User?.Identity?.Name;
-    var email = User?.Claims.FirstOrDefault(c=>c.Type == ClaimTypes.Email)?.Value;
-
-    var newUser = new User {
-      UserId = 0,
-      Username = email,
-      Password ="password123",
-      WatchList = new WatchList()
-    };
-    try {
-      await _userService.CreateAsync(newUser);
-    } catch ( Exception ex) {
-      Console.Write(ex.Message);
-    }
   }
   
   [HttpGet("profile")]
   [Authorize]
-  public IActionResult Profile()
+  public async Task<IActionResult> Profile()
   {
     if(User.Identity == null) {
       return Unauthorized("User Identity is null");
     } else if(User.Identity.IsAuthenticated == false) {
       return Unauthorized("User Identity is not authenticated");
     }
-      var name = User.Identity.Name;
-      var email = User.Claims.FirstOrDefault(c=> c.Type == ClaimTypes.Email)?.Value;
+    var name = User.Identity.Name;
+    var email = User.Claims.FirstOrDefault(c=> c.Type == ClaimTypes.Email)?.Value;
     var profileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value;
+  
+    // var existingUser = await _userService.GetAsync(email);
+    // Search for exiting user by id.
+    // Auto increment UserId. 
+    // Look into claims.
+      var new_user = new User {
+        UserId = 100,
+        Username = name,
+        Email = email,
+        Password = "password123sdsdfd",
+        ProfilePic = profileImage,
+        WatchList = new WatchList()
+      };
+      if(_userService is null) {
+        return StatusCode(500, "Cannot access userService");
+      }
+        await _userService.CreateAsync(new_user);
+      
+        
     return Ok(new{
       Name = name,
       EmailAddress = email,
@@ -95,7 +97,7 @@ public IActionResult RedirectToProfile() {
   
   [HttpGet("logout")]
   [Authorize]
-  public async Task<IActionResult> Logout()
+  public async Task Logout()
   {
     var authenticationProperties = new LogoutAuthenticationPropertiesBuilder()
       // Indicate here where Auth0 should redirect the user after a logout.
@@ -114,6 +116,6 @@ public IActionResult RedirectToProfile() {
     await HttpContext.SignOutAsync(
       CookieAuthenticationDefaults.AuthenticationScheme
     );
-   return Ok("Thank you for using StageSeeker"); 
+    
   }
 }
