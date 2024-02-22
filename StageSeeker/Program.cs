@@ -1,12 +1,15 @@
 using Auth0.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using StageSeeker.Controllers;
+using StageSeeker.MiddleWare;
 using StageSeeker.Models;
 using StageSeeker.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddAuth0WebAppAuthentication(options =>
 {
-    options.Domain = builder.Configuration["Auth0:Domain"];
-    options.ClientId = builder.Configuration["Auth0:ClientId"];
+    options.Domain = builder.Configuration["Auth0:Domain"] ?? throw new Exception("Missing 'Domain' setting in Auth0 configuration");;
+    options.ClientId = builder.Configuration["Auth0:ClientId"] ?? throw new Exception("Missing 'ClientId' setting in Auth0 configuration");;
     options.ClientSecret = builder.Configuration["Auth0:ClientSecret"];
     options.CallbackPath = new PathString("/callback");
 });
@@ -26,17 +29,22 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "StageSeeker V1");
+        // Require authentication for Swagger UI
+        c.RoutePrefix = "swagger"; // Remove base path for easier integration
+        app.UseMiddleware<SwaggerMiddleWare>();
+    });
 }
-
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
 
 
 app.MapControllers();

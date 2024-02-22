@@ -17,4 +17,7 @@ public class User {
     
     [BsonElement("password")]
     public required string Password { get; set; }
+
+    [BsonElement("WatchList")]
+    public WatchList WatchList {get; set;} = new WatchList();
 }

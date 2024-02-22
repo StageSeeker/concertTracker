@@ -7,11 +7,10 @@ namespace StageSeeker.Controllers;
 
 [ApiController]
 [Route("users")]
-public class UsersController : ControllerBase 
+public class UsersController(UsersService usersService, WatchListService watchListService) : ControllerBase 
 {
-    private readonly UsersService _usersService;
-
-    public UsersController(UsersService usersService) => _usersService = usersService;
+    private readonly UsersService _usersService = usersService;
+    private readonly WatchListService _watchListService = watchListService;
 
     // GET All users
     [HttpGet]
@@ -48,5 +47,19 @@ public class UsersController : ControllerBase
         return StatusCode(202);
     }
 
+    [HttpPost("{userId}/watchlist")]
+    public async Task<IActionResult> UpdateUserWatchlist(int userId) {
+        try {
+            var updatedWatchList = await _watchListService.GetUserWatchAsync(userId);
+            if (updatedWatchList == null)
+        {
+            return NotFound("Watchlist not found for user.");
+        }
+        await _usersService.UpdateUserWatchListAsync(userId, updatedWatchList);
+        return Ok("Watchlist updated successfully.");
+        } catch(Exception) {
+            return StatusCode(500, "Internal server error.");
+        }
+    }
    
 }
