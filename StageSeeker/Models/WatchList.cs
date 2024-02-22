@@ -12,11 +12,11 @@ public class WatchList {
     [BsonElement("watch_id")]
     public int WatchId {get; set;}
     [BsonElement("artist_name")]
-    public required string ArtistName {get; set;}
+    public string ArtistName {get; set;} = null!;
     [BsonElement("concert_name")]
-    public required string ConcertName {get; set;}
+    public string ConcertName {get; set;} = null!;
     [BsonElement("venue")]
-    public required string Venue {get; set;}
+    public string Venue {get; set;} = null!;
     [BsonElement("time")]
     public DateTime Time {get; set;}
     [BsonElement("Ticket_price")]

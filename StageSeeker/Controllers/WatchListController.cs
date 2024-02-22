@@ -21,48 +21,58 @@ public class WatchListController : ControllerBase
 
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<WatchList>> Get(int id)
+    [HttpGet("{userId}")]
+    public async Task<ActionResult<WatchList>> Get(int userId)
     {
-        var concert = await _watchService.GetWatchAsync(id);
+        var userWatchList = await _watchService.GetUserWatchAsync(userId);
+        if (userWatchList is null)
+        {
+            return NotFound();
+        }
+        return userWatchList;
+    }
+
+    [HttpPost("{userId}/{artist}/{concertId}")]
+    public async Task<IActionResult> Post(int userId, string artist, int concertId)
+    {
+        try
+        {
+            await _watchService.CreateAsync(userId, artist, concertId);
+            return CreatedAtAction(nameof(Get), new { user = userId }, null);
+        }
+        catch (Exception ex)
+        {
+            // Handle errors gracefully
+            Console.Error.WriteLine("Error creating watch list: " + ex.Message);
+            return StatusCode(500, "Failed to create watch list");
+        }
+    }
+
+    [HttpPatch("{userId}/{concertId}")]
+    public async Task<IActionResult> Update(int userId, int concertId, [FromBody] WatchList updatedValues)
+    {
+        var watchList = await _watchService.GetOneUserConcertAsync(userId, concertId);
+
+        if (watchList is null)
+        {
+            return NotFound();
+        }
+
+        // Call the service method with the updated fields
+        await _watchService.UpdateAsync(userId, concertId, updatedValues);
+
+        return NoContent(); // 204 No Content
+    }
+
+    [HttpDelete("{userId}/{concertId}")]
+    public async Task<IActionResult> Delete(int userId, int concertId)
+    {
+        var concert = await _watchService.GetOneUserConcertAsync(userId, concertId);
         if (concert is null)
         {
             return NotFound();
         }
-        return concert;
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Post([FromBody] WatchList new_watchList)
-    {
-        await _watchService.CreateAsync(new_watchList);
-        return CreatedAtAction(nameof(Get), new { watchID = new_watchList.WatchId }, new_watchList);
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, WatchList update_WatchList)
-    {
-        var concert = await _watchService.GetWatchAsync(id);
-        if (concert is null)
-        {
-            return NotFound();
-        }
-
-        // Extract attendance status from WatchList
-        bool isAttending = update_WatchList.IsAttending;
-        await _watchService.UpdateAsync(id, isAttending);
-        return StatusCode(201);
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var concert = await _watchService.GetWatchAsync(id);
-        if (concert is null)
-        {
-            return NotFound();
-        }
-        await _watchService.RemoveAsync(id);
+        await _watchService.RemoveAsync(concertId);
         return StatusCode(202);
     }
 }

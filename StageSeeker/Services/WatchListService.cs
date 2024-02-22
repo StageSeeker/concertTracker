@@ -1,13 +1,15 @@
 using StageSeeker.Models;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using Microsoft.AspNetCore.Mvc;
 
 namespace StageSeeker.Services;
 public class WatchListService
 {
     private readonly IMongoCollection<WatchList> _watchListCollection;
+    private readonly ConcertService _concertService;
 
-    public WatchListService(IOptions<MongoDBSettings> mongoDBSettings)
+    public WatchListService(IOptions<MongoDBSettings> mongoDBSettings, ConcertService concertService)
     {
         try
         {
@@ -15,6 +17,8 @@ public class WatchListService
             var mongoClient = new MongoClient(mongoDBSettings.Value.ConnectionString);
             var mongoDataBase = mongoClient.GetDatabase(mongoDBSettings.Value.DatabaseName);
             _watchListCollection = mongoDataBase.GetCollection<WatchList>(mongoDBSettings.Value.WatchListCollectionName);
+
+            _concertService = concertService;
         }
         catch (MongoException ex)
         {
@@ -22,7 +26,7 @@ public class WatchListService
             throw new Exception("Failed to connect to MongoDB: " + ex.Message);
         }
     }
-    // Get All WatchLists
+    // Get All User WatchLists
     public async Task<List<WatchList>> GetWatchAsync()
     {
         try
@@ -35,48 +39,94 @@ public class WatchListService
             throw new Exception("Failed to retrieve watch lists: " + ex.Message);
         }
     }
-    //Get One WatchList
-    public async Task<WatchList?> GetWatchAsync(int id)
-{
-    var cursor = _watchListCollection.Find(x => x.WatchId == id);
-    return await cursor.FirstOrDefaultAsync();
-}
-    // Create WatchList
-    public async Task CreateAsync(WatchList new_watchList)
-{
-    try
+    //Get One WatchList by the user id
+    public async Task<WatchList?> GetUserWatchAsync(int userId)
     {
-        await _watchListCollection.InsertOneAsync(new_watchList);
+        var cursor = _watchListCollection.Find(x => x.UserId == userId);
+        return await cursor.FirstOrDefaultAsync();
     }
-    catch (MongoException ex)
+
+    // Get One Concert on User WatchList
+    public async Task<WatchList> GetOneUserConcertAsync(int userId, int concertId) {
+        var concertItem = Builders<WatchList>.Filter.And(
+        Builders<WatchList>.Filter.Eq(x => x.UserId, userId),
+        Builders<WatchList>.Filter.Eq(x => x.WatchId, concertId));
+        return await _watchListCollection.Find(concertItem).FirstOrDefaultAsync();
+    }
+    // Create WatchList 
+    public async Task CreateAsync(int userId, string artist, int concertId)
     {
-        // Handle errors during watch list retrieval
-        throw new Exception("Failed to to create watch lists: " + ex.Message);
+        try
+        {
+            List<Concert> concerts = await _concertService.GetConcertsByArtist(artist);
+            Concert desiredConcert = concerts.FirstOrDefault(x => x.ConcertId == concertId) ?? throw new Exception($"Concert with ID {concertId} was not found for {artist}");
+            var watchList = new WatchList
+        {
+            UserId = userId,
+            WatchId = desiredConcert.ConcertId,
+            ArtistName = string.Join(", ", desiredConcert.Performers.Select(p => p.Artist)),
+            ConcertName = desiredConcert.Title,
+            Venue = desiredConcert.Location.Name,
+            Time = desiredConcert.Date,
+            Price = desiredConcert.Prices.LowestPrice,
+            IsAttending = false // Initially set to false
+        };
+        if(watchList is null) {
+            throw new Exception($"Failed to create WatchList object for concert: {concertId}");
+        }
+            await _watchListCollection.InsertOneAsync(watchList);
+        }
+        catch (MongoException ex)
+        {
+            // Handle errors during watch list retrieval
+            throw new Exception("Failed to to create watch lists: " + ex.Message);
+        }
     }
-}
     // Update WatchList
-  public async Task UpdateAsync(int id, bool isAttending)
-{
-    // Use Builders to filter the WatchList by WatchId
-    var filter = Builders<WatchList>.Filter.Eq(x => x.WatchId, id);
+    public async Task UpdateAsync(int userId, int concertId, [FromBody] WatchList updateList)
+    {
+        var filter = Builders<WatchList>.Filter.And(
+        Builders<WatchList>.Filter.Eq(x => x.UserId, userId),
+        Builders<WatchList>.Filter.Eq(x => x.WatchId, concertId));
+        var update = Builders<WatchList>.Update.Combine();
 
-    // Create the update operation for IsAttending
-    var update = Builders<WatchList>.Update.Set(w => w.IsAttending, isAttending);
-
-    // Perform the update
-    await _watchListCollection.UpdateOneAsync(filter, update);
-}
+        // Conditionally sets fields based on null inputs
+        // String fields needs to be emtpty "" to remain the same. 
+        // if (!string.IsNullOrEmpty(updateList.ArtistName))
+        // {
+        //     update = update.Set(x => x.ArtistName, updateList.ArtistName);
+        // }
+        // if (!string.IsNullOrEmpty(updateList.ConcertName))
+        // {
+        //     update = update.Set(x => x.ConcertName, updateList.ConcertName);
+        // }
+        // if (!string.IsNullOrEmpty(updateList.Venue))
+        // {
+        //     update = update.Set(x => x.Venue, updateList.ConcertName);
+        // }
+        // // Price field can be 0 to keep the same value or null(empty)
+        // if (updateList.Price != 0)
+        // {
+        //     update = update.Set(x => x.Price, updateList.Price);
+        // }
+        if (updateList.IsAttending)
+        {
+            update = update.Set(x => x.IsAttending, updateList.IsAttending);
+        }
+        await _watchListCollection.UpdateOneAsync(filter, update);
+    }
 
     // Remove WatchList
-    public async Task RemoveAsync(int id) {
-        try {
-            await _watchListCollection.DeleteOneAsync(x=>x.WatchId == id);
-        } catch (MongoException ex)
+    public async Task RemoveAsync(int concertId)
     {
-        // Handle errors during watch list retrieval
-        throw new Exception("Failed to to remove watch lists: " + ex.Message);
-    }
+        try
+        {
+            await _watchListCollection.DeleteOneAsync(x => x.WatchId == concertId);
+        }
+        catch (MongoException ex)
+        {
+            // Handle errors during watch list retrieval
+            throw new Exception("Failed to to remove watch lists: " + ex.Message);
+        }
     }
 }
-
-
