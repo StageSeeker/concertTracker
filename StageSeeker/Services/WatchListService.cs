@@ -59,7 +59,8 @@ public class WatchListService
         try
         {
             List<Concert> concerts = await _concertService.GetConcertsByArtist(artist);
-            Concert desiredConcert = concerts.FirstOrDefault(x => x.ConcertId == concertId) ?? throw new Exception($"Concert with ID {concertId} was not found for {artist}");
+            Concert desiredConcert = concerts.FirstOrDefault(x => x.ConcertId == concertId) 
+            ?? throw new Exception($"Concert with ID {concertId} was not found for {artist}");
             var watchList = new WatchList
         {
             UserId = userId,

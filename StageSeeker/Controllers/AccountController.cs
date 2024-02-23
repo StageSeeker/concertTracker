@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Auth0.AspNetCore.Authentication;
+using MongoDB.Driver;
+using StageSeeker.Models;
+using StageSeeker.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
@@ -9,6 +12,35 @@ using System.Security.Claims;
 [Route("protected")]
 public class AccountController : Controller
 {
+  private readonly IConfiguration? _configuration;
+  private readonly UsersService? _userService;
+public AccountController(UsersService usersService) {
+  _userService = usersService;
+}
+[HttpGet("/")]
+public ActionResult Home() {
+  return Ok("Log into StageSeeker using /login or protected/login endpoint");
+}
+
+//redirect routes for easy login / logout
+[Route("/login")]
+[HttpGet]
+public IActionResult RedirectToLogin() {
+  return RedirectToAction("Login", "Account");
+}
+
+[Route("/logout")]
+[HttpGet]
+public IActionResult RedirectToLogout() {
+  return RedirectToAction("Logout", "Account");
+}
+
+[Route("/profile")]
+[HttpGet]
+public IActionResult RedirectToProfile() {
+  return RedirectToAction("Profile", "Account");
+}
+
 [HttpGet("login")]
   public async Task Login(string returnUrl = "/swagger")
   {
@@ -27,16 +59,40 @@ public class AccountController : Controller
   
   [HttpGet("profile")]
   [Authorize]
-  public IActionResult Profile()
+  public async Task<IActionResult> Profile()
   {
-    return View(new
-    {
-      Name = User.Identity.Name,
-      EmailAddress = User.Claims
-        .FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
-      ProfileImage = User.Claims
-        .FirstOrDefault(c => c.Type == "picture")?.Value
-    });
+    if(User.Identity == null) {
+      return Unauthorized("User Identity is null");
+    } else if(User.Identity.IsAuthenticated == false) {
+      return Unauthorized("User Identity is not authenticated");
+    }
+    var name = User.Identity.Name;
+    var email = User.Claims.FirstOrDefault(c=> c.Type == ClaimTypes.Email)?.Value;
+    var profileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value;
+  
+    // var existingUser = await _userService.GetAsync(email);
+    // Search for exiting user by id.
+    // Auto increment UserId. 
+    // Look into claims.
+      var new_user = new User {
+        UserId = 100,
+        Username = name,
+        Email = email,
+        Password = "password123sdsdfd",
+        ProfilePic = profileImage,
+        WatchList = new WatchList()
+      };
+      if(_userService is null) {
+        return StatusCode(500, "Cannot access userService");
+      }
+        await _userService.CreateAsync(new_user);
+      
+        
+    return Ok(new{
+      Name = name,
+      EmailAddress = email,
+      ProfileImage = profileImage
+    });    
   }
   
   [HttpGet("logout")]
@@ -47,7 +103,8 @@ public class AccountController : Controller
       // Indicate here where Auth0 should redirect the user after a logout.
       // Note that the resulting absolute Uri must be added to the
       // **Allowed Logout URLs** settings for the app.
-      .WithRedirectUri(Url.Action("Index", "Home"))
+      // Points to where Auth0 should redirect after logout
+      .WithRedirectUri("/logout")
       .Build();
 
     // Logout from Auth0
@@ -59,5 +116,6 @@ public class AccountController : Controller
     await HttpContext.SignOutAsync(
       CookieAuthenticationDefaults.AuthenticationScheme
     );
+    
   }
 }
