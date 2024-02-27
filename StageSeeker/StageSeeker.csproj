@@ -10,6 +10,8 @@
   <ItemGroup>
     <PackageReference Include="Auth0.AspNetCore.Authentication" Version="1.4.1" />
     <PackageReference Include="Auth0.ManagementApi" Version="7.26.1" />
+    <PackageReference Include="Bcrypt" Version="1.0.0" />
+    <PackageReference Include="Bcrypt.Net" Version="0.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="8.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.1" />
     <PackageReference Include="Microsoft.IdentityModel" Version="7.0.0" />

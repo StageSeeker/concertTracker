@@ -7,7 +7,7 @@ namespace StageSeeker.Services;
 public class UsersService
 {
     private readonly IMongoCollection<User> _usersCollection;
-
+    
     public UsersService(IOptions<MongoDBSettings> stageSeekerDatabaseSettings)
     {
         var mongoClient = new MongoClient(
@@ -18,6 +18,17 @@ public class UsersService
 
         _usersCollection = mongoDatabase.GetCollection<User>(
             stageSeekerDatabaseSettings.Value.UserCollectionName);
+    }
+
+    // Count users
+    private async Task<int> UserCount(){
+        try {
+        var users = await GetAsync() 
+        ?? throw new Exception("Failed to fetch user count");
+        return users.Count + 1;
+        } catch (Exception) {
+            return -1;
+        }
     }
 
     // Get All Users
@@ -46,6 +57,12 @@ public class UsersService
     {
         try
         {
+            int userCount = await UserCount();
+            if(userCount <0) {
+                throw new Exception("Failed to auto increment userID");
+            }
+            int uniqueId = userCount++;
+            new_user.UserId = uniqueId;
             await _usersCollection.InsertOneAsync(new_user);
         }
         catch (MongoException ex)
@@ -95,6 +112,12 @@ public class UsersService
             Console.WriteLine("Failed to update user watchlist " + ex.Message);
         }
     }
+
+    public async Task<User?> GetUserByName(string username)
+    {
+        var user = _usersCollection.Find(user => user.Username == username);
+        return await user.FirstOrDefaultAsync();
+    } 
 }
 
 
