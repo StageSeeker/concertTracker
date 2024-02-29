@@ -17,6 +17,7 @@ public class AccountController : Controller
 public AccountController(UsersService usersService) {
   _userService = usersService;
 }
+
 [HttpGet("/")]
 public ActionResult Home() {
   return Ok("Log into StageSeeker using /login or protected/login endpoint");
@@ -76,11 +77,11 @@ public IActionResult RedirectToProfile() {
     // Look into claims.
       var new_user = new User {
         UserId = 100,
-        Username = name,
-        Email = email,
+        Username = name!,
+        Email = email!,
         Password = "password123sdsdfd",
-        ProfilePic = profileImage,
-        WatchList = new WatchList()
+        ProfilePic = profileImage!,
+        WatchList = new List<WatchList>()
       };
       if(_userService is null) {
         return StatusCode(500, "Cannot access userService");
@@ -104,7 +105,7 @@ public IActionResult RedirectToProfile() {
       // Note that the resulting absolute Uri must be added to the
       // **Allowed Logout URLs** settings for the app.
       // Points to where Auth0 should redirect after logout
-      .WithRedirectUri("/logout")
+      .WithRedirectUri("/")
       .Build();
 
     // Logout from Auth0

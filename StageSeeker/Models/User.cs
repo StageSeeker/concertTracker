@@ -26,5 +26,5 @@ public class User {
     public string ProfilePic {get; set;} = null!;
 
     [BsonElement("WatchList")]
-    public WatchList WatchList {get; set;} = new WatchList();
+    public List<WatchList> WatchList {get; set;} = new List<WatchList>();
 }

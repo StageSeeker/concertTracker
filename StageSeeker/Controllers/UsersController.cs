@@ -1,6 +1,7 @@
 using StageSeeker.Models;
 using StageSeeker.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace StageSeeker.Controllers;
