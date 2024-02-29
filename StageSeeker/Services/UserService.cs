@@ -99,7 +99,7 @@ public class UsersService
                 throw new Exception("User was not found");
             }
 
-            existingUser.WatchList = updateWatchList;
+            existingUser.WatchList.Add(updateWatchList);
             var replaceResult = await _usersCollection.ReplaceOneAsync(filter, existingUser);
 
             if(!replaceResult.IsModifiedCountAvailable) {

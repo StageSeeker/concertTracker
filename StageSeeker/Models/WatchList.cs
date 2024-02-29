@@ -23,4 +23,9 @@ public class WatchList {
     public int Price {get; set;}
     [BsonElement("Attending")]
     public bool IsAttending {get; set;}
+
+    public static implicit operator List<object>(WatchList v)
+    {
+        throw new NotImplementedException();
+    }
 }

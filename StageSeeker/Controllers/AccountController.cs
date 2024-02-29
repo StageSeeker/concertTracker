@@ -17,6 +17,7 @@ public class AccountController : Controller
 public AccountController(UsersService usersService) {
   _userService = usersService;
 }
+
 [HttpGet("/")]
 public ActionResult Home() {
   return Ok("Log into StageSeeker using /login or protected/login endpoint");
@@ -91,11 +92,12 @@ public IActionResult RedirectToProfile() {
     string password = "password123sdsdfd"; // Example password, should be fetched securely
     string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
       var new_user = new User {
-        Username = name,
-        Email = email,
-        Password = hashedPassword,
-        ProfilePic = profileImage,
-        WatchList = new WatchList()
+        UserId = 100,
+        Username = name!,
+        Email = email!,
+        Password = "password123sdsdfd",
+        ProfilePic = profileImage!,
+        WatchList = new List<WatchList>()
       };
         await _userService.CreateAsync(new_user);
         return Ok("User Succesfully registed with StageSeeker");
@@ -111,7 +113,7 @@ public IActionResult RedirectToProfile() {
       // Note that the resulting absolute Uri must be added to the
       // **Allowed Logout URLs** settings for the app.
       // Points to where Auth0 should redirect after logout
-      .WithRedirectUri("/logout")
+      .WithRedirectUri("/")
       .Build();
 
     // Logout from Auth0

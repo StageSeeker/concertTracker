@@ -1,7 +1,7 @@
 using System.Net;
 using Auth0.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder; 
 using StageSeeker.Controllers;
 using StageSeeker.MiddleWare;
 using StageSeeker.Models;
@@ -43,8 +43,8 @@ app.UseAuthorization();
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "StageSeeker V1");
         // Require authentication for Swagger UI
-        c.RoutePrefix = "swagger"; // Remove base path for easier integration
-        app.UseMiddleware<SwaggerMiddleWare>();
+        // c.RoutePrefix = "swagger"; // Remove base path for easier integration
+        // app.UseMiddleware<SwaggerMiddleWare>();
     });
     app.UseHttpsRedirection();
 
