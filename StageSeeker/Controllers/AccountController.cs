@@ -8,11 +8,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
+
 [ApiController]
 [Route("protected")]
 public class AccountController : Controller
 {
-  private readonly IConfiguration? _configuration;
   private readonly UsersService? _userService;
 public AccountController(UsersService usersService) {
   _userService = usersService;
@@ -71,10 +71,26 @@ public IActionResult RedirectToProfile() {
     var email = User.Claims.FirstOrDefault(c=> c.Type == ClaimTypes.Email)?.Value;
     var profileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value;
   
-    // var existingUser = await _userService.GetAsync(email);
-    // Search for exiting user by id.
-    // Auto increment UserId. 
+    // Look into how to store password from login context
+    // or disable allowing user to user credentials 
+    // only allow sso  
     // Look into claims.
+    if(_userService is null) {
+      return StatusCode(500, "Cannot access userService");
+    }
+    if(name is null) {
+      throw new Exception("Could not username");
+    }
+    var existingUser = await _userService.GetUserByName(name);
+    if (existingUser is not null) {
+      return Ok(new{
+      Name = name,
+      EmailAddress = email,
+      ProfileImage = profileImage
+    });
+    }
+    string password = "password123sdsdfd"; // Example password, should be fetched securely
+    string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
       var new_user = new User {
         UserId = 100,
         Username = name!,
@@ -83,17 +99,9 @@ public IActionResult RedirectToProfile() {
         ProfilePic = profileImage!,
         WatchList = new List<WatchList>()
       };
-      if(_userService is null) {
-        return StatusCode(500, "Cannot access userService");
-      }
         await _userService.CreateAsync(new_user);
-      
-        
-    return Ok(new{
-      Name = name,
-      EmailAddress = email,
-      ProfileImage = profileImage
-    });    
+        return Ok("User Succesfully registed with StageSeeker");
+         
   }
   
   [HttpGet("logout")]

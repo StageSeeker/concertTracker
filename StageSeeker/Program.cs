@@ -1,3 +1,4 @@
+using System.Net;
 using Auth0.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder; 
@@ -28,14 +29,15 @@ builder.Services.AddSingleton<ConcertService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddHttpsRedirection(options=>{
+    options.HttpsPort = 7290;
+});
+
 var app = builder.Build();
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -44,7 +46,8 @@ if (app.Environment.IsDevelopment())
         // c.RoutePrefix = "swagger"; // Remove base path for easier integration
         // app.UseMiddleware<SwaggerMiddleWare>();
     });
-}
+    app.UseHttpsRedirection();
+
 
 
 app.MapControllers();
