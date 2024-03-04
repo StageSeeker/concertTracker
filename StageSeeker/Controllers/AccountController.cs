@@ -70,6 +70,7 @@ public IActionResult RedirectToProfile() {
     var name = User.Identity.Name;
     var email = User.Claims.FirstOrDefault(c=> c.Type == ClaimTypes.Email)?.Value;
     var profileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value;
+    var subClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
   
     // Look into how to store password from login context
     // or disable allowing user to user credentials 
@@ -86,13 +87,13 @@ public IActionResult RedirectToProfile() {
       return Ok(new{
       Name = name,
       EmailAddress = email,
-      ProfileImage = profileImage
+      ProfileImage = profileImage,
+      Sub = subClaim
     });
     }
     string password = "password123sdsdfd"; // Example password, should be fetched securely
     string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
       var new_user = new User {
-        UserId = 100,
         Username = name!,
         Email = email!,
         Password = "password123sdsdfd",

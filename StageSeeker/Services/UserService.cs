@@ -48,8 +48,18 @@ public class UsersService
     // GET One Single user
     public async Task<User?> GetAsync(int id)
     {
-        var user = _usersCollection.Find(user => user.UserId == id);
-        return await user.FirstOrDefaultAsync();
+        try {
+            var user = _usersCollection.Find(user => user.UserId == id);
+        var projection = Builders<User>.Projection.Include(x => x.WatchList);
+        if (user is null) {
+            throw new Exception($"Failed to find user with ID {id}");
+        }
+       
+        return await user.SingleAsync();
+        } catch(MongoException ex) {
+            throw new Exception("Error: " + ex.Message);
+        }
+        
     }
 
     // Create a user
@@ -63,6 +73,9 @@ public class UsersService
             }
             int uniqueId = userCount++;
             new_user.UserId = uniqueId;
+            if(new_user.WatchList is null) {
+                new_user.WatchList = [];
+            }
             await _usersCollection.InsertOneAsync(new_user);
         }
         catch (MongoException ex)
@@ -84,40 +97,63 @@ public class UsersService
             throw new Exception("Failed to remove user: " + ex.Message);
         }
     }
-    public async Task UpdateUserWatchListAsync(int userId, WatchList updateWatchList)
-    {
-        try
-        {
-            if (userId < 0 || updateWatchList is null)
-            {
-                throw new Exception("Invalid User ID or empty WatchList");
-            }
-            var filter = Builders<User>.Filter.Eq(x => x.UserId, userId);
-            var existingUser = await _usersCollection.Find(filter).FirstOrDefaultAsync();
 
-            if (existingUser is null) {
-                throw new Exception("User was not found");
+    // Helper Method to Delete Concert from User WatchList
+    public async Task RemoveConcertAsync(int userId, int concertId) {
+        try {
+            var user = await _usersCollection.FindOneAndUpdateAsync(
+                Builders<User>.Filter.Eq(x=>x.UserId, userId),
+                Builders<User>.Update.PullFilter(x=> x.WatchList,
+                Builders<WatchList>.Filter.Eq(y=> y.WatchId, concertId))
+            );
+            if(user is null) {
+                throw new Exception($"Failed to find concert ID {concertId}, for user {userId} - {user?.Username}");
             }
-
-            existingUser.WatchList.Add(updateWatchList);
-            var replaceResult = await _usersCollection.ReplaceOneAsync(filter, existingUser);
-
-            if(!replaceResult.IsModifiedCountAvailable) {
-                throw new Exception($"Failed to update Watchlist for user: {userId}");
-            }
-            Console.WriteLine($"Succesfully update user with ID: {userId}");
-        }
-        catch(Exception ex)
-        {
-            Console.WriteLine("Failed to update user watchlist " + ex.Message);
+        } catch (MongoException ex) {
+            throw new Exception("Error: " + ex.Message);
         }
     }
 
+    //Helper Method tto obtain user Name when logged via Auth0    
     public async Task<User?> GetUserByName(string username)
     {
-        var user = _usersCollection.Find(user => user.Username == username);
+        try {
+            var user = _usersCollection.Find(user => user.Username == username);
+            if (user is null) {
+                throw new Exception($"Failed to find user: {user}");
+            }
         return await user.FirstOrDefaultAsync();
-    } 
+        } catch(Exception ex) {
+            throw new Exception("Error: " + ex.Message);
+        }  
+    }
+
+    // Helper Method to update WatchList
+    public async Task UpdateUserWatchListAsync(int userId, int concertId, bool isAttending)
+{
+    try
+    {
+        var filter = Builders<User>.Filter.And(
+            Builders<User>.Filter.Eq(x => x.UserId, userId),
+            Builders<User>.Filter.ElemMatch(x => x.WatchList, wl => wl.WatchId == concertId && !wl.IsAttending)
+        );
+
+        var update = Builders<User>.Update
+            .Set("WatchList.$.IsAttending", isAttending);
+
+        var updateResult = await _usersCollection.UpdateOneAsync(filter, update);
+
+        if (updateResult.ModifiedCount == 0)
+        {
+            throw new Exception($"Failed to update user watchlist: Entry with WatchId {concertId} not found for user ID {userId}");
+        }
+    }
+    catch (MongoException ex)
+    {
+        throw new Exception("Failed to update user watchlist: " + ex.Message);
+    }
+}
+
 }
 
 

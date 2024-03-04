@@ -22,7 +22,7 @@ public class WatchListController : ControllerBase
     }
 
     [HttpGet("{userId}")]
-    public async Task<ActionResult<WatchList>> Get(int userId)
+    public async Task<ActionResult<List<WatchList>>> Get(int userId)
     {
         var userWatchList = await _watchService.GetUserWatchAsync(userId);
         if (userWatchList is null)
@@ -38,18 +38,18 @@ public class WatchListController : ControllerBase
         try
         {
             await _watchService.CreateAsync(userId, artist, concertId);
-            return CreatedAtAction(nameof(Get), new { user = userId }, null);
+            return CreatedAtAction(nameof(Post), new { user = userId }, null);
         }
         catch (Exception ex)
         {
             // Handle errors gracefully
             Console.Error.WriteLine("Error creating watch list: " + ex.Message);
-            return StatusCode(500, "Failed to create watch list");
+            return StatusCode(500, "Failed to create watch list: " + ex.Message);
         }
     }
 
     [HttpPatch("{userId}/{concertId}")]
-    public async Task<IActionResult> Update(int userId, int concertId, [FromBody] WatchList updatedValues)
+    public async Task<IActionResult> Update(int userId, int concertId, [FromBody] bool updatedValues)
     {
         var watchList = await _watchService.GetOneUserConcertAsync(userId, concertId);
 
@@ -67,12 +67,16 @@ public class WatchListController : ControllerBase
     [HttpDelete("{userId}/{concertId}")]
     public async Task<IActionResult> Delete(int userId, int concertId)
     {
-        var concert = await _watchService.GetOneUserConcertAsync(userId, concertId);
+        try {
+            var concert = await _watchService.GetOneUserConcertAsync(userId, concertId);
         if (concert is null)
         {
-            return NotFound();
+            throw new Exception($"Could not find concert on watch list with ID: {concertId}");
         }
-        await _watchService.RemoveAsync(concertId);
+        await _watchService.RemoveAsync(userId,concertId);
         return StatusCode(202);
+        } catch (Exception ex) {
+            return NotFound("Failed to delete concert: " + ex.Message);
+        }
     }
 }

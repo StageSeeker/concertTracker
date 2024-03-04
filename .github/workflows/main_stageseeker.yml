@@ -12,6 +12,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+    REDIRECT_URI: "https://localhost/7290/callback"
 
     steps:
       - uses: actions/checkout@v4

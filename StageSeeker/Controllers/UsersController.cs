@@ -1,7 +1,6 @@
 using StageSeeker.Models;
 using StageSeeker.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 
 
 namespace StageSeeker.Controllers;
@@ -25,6 +24,7 @@ public class UsersController(UsersService usersService, WatchListService watchLi
         if (user is null) {
             return NotFound();
         } 
+        user.WatchList = await _watchListService.GetUserWatchAsync(id);
         return user;
     }
 
@@ -47,20 +47,4 @@ public class UsersController(UsersService usersService, WatchListService watchLi
         await _usersService.RemoveAsync(id);
         return StatusCode(202);
     }
-
-    [HttpPost("{userId}/watchlist")]
-    public async Task<IActionResult> UpdateUserWatchlist(int userId) {
-        try {
-            var updatedWatchList = await _watchListService.GetUserWatchAsync(userId);
-            if (updatedWatchList == null)
-        {
-            return NotFound("Watchlist not found for user.");
-        }
-        await _usersService.UpdateUserWatchListAsync(userId, updatedWatchList);
-        return Ok("Watchlist updated successfully.");
-        } catch(Exception) {
-            return StatusCode(500, "Internal server error.");
-        }
-    }
-   
 }
