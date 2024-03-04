@@ -1,8 +1,9 @@
 # Concert Tracker
 
 ## TeckStack
-- C# webapi
+- C# .Net ASP Core
 - MongoDB for database connections.
+- Swagger UI for development.
 
 ## Features
 ### Concert discovery
@@ -16,24 +17,42 @@
 
 ### Attendance tracking
 - Enable users to mark concerts they've attended, potentially logging notes, pictures, or memories.
-- Generate statistics and summaries based on attendance history (e.g., favorite artists, genres, venues).
 
+## Installation
+Install the following:
+- IDE such as Visual Studio Code (VS Code) or Visual Studio
+- VS Code C# extensions: C# Extension, C# Dev Kit, .NET install tools.
+- Install .NET: .NET 7.0+ runtime and sdk.
+
+### Setup
+- Clone this repositiory
+- Open up project in your IDE of choice(VS Code).
+
+### Build & Run Application
+***Trust HTTP certificate***
+``` bash
+dotnet dev-certs https --trust
+```
+***Build Command***
+``` bash
+dotnet build
+```
+***Run Command***
+``` bash
+dotnet run --launch-profile https
+```
+
+***Start the server with .NET Hot Reload (to be able to make changes to the server without restarting):***
+``` bash
+dotnet watch run --launch-profile https
+```
+## Testing
+Test the API Endpoints by:
+- First Authenticating with the https://localhost/7290/login
+- This will redirect you to https://localhost/7290/swagger
+- All Endpoints will be listed on Swagger. 
 ## MVP Tiers
-### Tier 1 — MVP Application - CRUD and REST
-- As a User, I want to read entries from the database
-- As a User, I want to add entries to the database
-- As a User, I want to delete entries from the database
-- As a User, I want to edit entries in the database
-- As a User, I expect to do all of the above by accessing RESTful routes
-- As a User, I want to log in to a deployed app. Reference the Deployment section for instructions.
 
-### Tier 2 - Login, Hashing
-- As a User, I want to be able to log in to my API
-- As a User, I want any passwords saved to be hashed and salted before saved to the database (note: If you use OAuth, you might not even store passwords at all!)
-
-### Tier 3 - Register
-- As a potential User, I want to be able to sign up for the API
-- As a signed-up User, I want to be granted authorization to access the API
 
 ### Tier 4 - Authorization
 - As a User, I want my API protected from unauthorized Users
