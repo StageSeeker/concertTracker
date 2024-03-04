@@ -7,9 +7,11 @@ namespace StageSeeker.Services;
 public class WatchListService
 {
     private readonly IMongoCollection<WatchList> _watchListCollection;
+    private readonly IMongoCollection<User> _usersCollection;
     private readonly ConcertService _concertService;
+    private readonly UsersService _userService;
 
-    public WatchListService(IOptions<MongoDBSettings> mongoDBSettings, ConcertService concertService)
+    public WatchListService(IOptions<MongoDBSettings> mongoDBSettings, ConcertService concertService, UsersService userService)
     {
         try
         {
@@ -17,8 +19,9 @@ public class WatchListService
             var mongoClient = new MongoClient(mongoDBSettings.Value.ConnectionString);
             var mongoDataBase = mongoClient.GetDatabase(mongoDBSettings.Value.DatabaseName);
             _watchListCollection = mongoDataBase.GetCollection<WatchList>(mongoDBSettings.Value.WatchListCollectionName);
-
+            _usersCollection = mongoDataBase.GetCollection<User>(mongoDBSettings.Value.UserCollectionName);
             _concertService = concertService;
+            _userService = userService;
         }
         catch (MongoException ex)
         {
@@ -40,24 +43,49 @@ public class WatchListService
         }
     }
     //Get One WatchList by the user id
-    public async Task<WatchList?> GetUserWatchAsync(int userId)
+    public async Task<List<WatchList>> GetUserWatchAsync(int userId)
     {
+        try {
         var cursor = _watchListCollection.Find(x => x.UserId == userId);
-        return await cursor.FirstOrDefaultAsync();
+        if(cursor is null) {
+            throw new Exception($"Failed to get watch list for user ID:{userId}");
+        }
+        return await cursor.ToListAsync();
+        } catch(MongoException ex) {
+            throw new Exception("Error: " + ex.Message);
+        }
+        
     }
 
     // Get One Concert on User WatchList
-    public async Task<WatchList> GetOneUserConcertAsync(int userId, int concertId) {
-        var concertItem = Builders<WatchList>.Filter.And(
-        Builders<WatchList>.Filter.Eq(x => x.UserId, userId),
-        Builders<WatchList>.Filter.Eq(x => x.WatchId, concertId));
-        return await _watchListCollection.Find(concertItem).FirstOrDefaultAsync();
+    public async Task<WatchList?> GetOneUserConcertAsync(int userId, int concertId) {
+        try {
+            var user = await _userService.GetAsync(userId);
+            if(user is null) {
+                throw new Exception($"Failed to find user {userId}");
+            }
+            var watchlist = user.WatchList?.FirstOrDefault(x=> x.WatchId == concertId);
+            if(watchlist is null) {
+                throw new Exception($"Failed to find user concert {concertId}");
+            }
+            return watchlist;
+        } catch (Exception ex) {
+            throw new Exception("Error: " + ex.Message);
+        }
     }
+
     // Create WatchList 
-    public async Task CreateAsync(int userId, string artist, int concertId)
+    public async Task<WatchList> CreateAsync(int userId, string artist, int concertId)
     {
         try
         {
+            var existingConcert = await _watchListCollection.Find(
+                Builders<WatchList>.Filter.Eq(x => x.UserId, userId) &
+                Builders<WatchList>.Filter.Eq(x=>x.WatchId, concertId)).FirstOrDefaultAsync();
+            if(existingConcert != null) {
+                throw new Exception($"You already have this concert ({artist} - {concertId}) in your watchlist.");
+            }
+            
             List<Concert> concerts = await _concertService.GetConcertsByArtist(artist);
             Concert desiredConcert = concerts.FirstOrDefault(x => x.ConcertId == concertId) 
             ?? throw new Exception($"Concert with ID {concertId} was not found for {artist}");
@@ -76,6 +104,8 @@ public class WatchListService
             throw new Exception($"Failed to create WatchList object for concert: {concertId}");
         }
             await _watchListCollection.InsertOneAsync(watchList);
+            await AddToUserWatchListAsync(userId, watchList);
+            return watchList;
         }
         catch (MongoException ex)
         {
@@ -83,46 +113,53 @@ public class WatchListService
             throw new Exception("Failed to to create watch lists: " + ex.Message);
         }
     }
+    public async Task AddToUserWatchListAsync(int userId, WatchList newConcert)
+        {
+            try {
+            var user = await _usersCollection.Find(Builders<User>.Filter.Eq(x => x.UserId, userId))
+            .FirstOrDefaultAsync();            
+            if(user is null) {
+                throw new Exception($"User with ID {userId} not found.");
+            }
+            List<WatchList> existingWatchList = user.WatchList;
+            if(existingWatchList is null) {
+                existingWatchList = [];
+            }
+            existingWatchList.Add(newConcert);
+            user.WatchList = existingWatchList;
+            await _usersCollection.ReplaceOneAsync(
+            Builders<User>.Filter.Eq(x => x.UserId, userId),
+            user);
+        } catch(MongoException ex) {
+            throw new Exception("Failed to update WatchList: " + ex.Message);
+        }
+        }
+
     // Update WatchList
-    public async Task UpdateAsync(int userId, int concertId, [FromBody] WatchList updateList)
+    public async Task UpdateAsync(int userId, int concertId, bool attendance)
     {
         var filter = Builders<WatchList>.Filter.And(
         Builders<WatchList>.Filter.Eq(x => x.UserId, userId),
         Builders<WatchList>.Filter.Eq(x => x.WatchId, concertId));
-        var update = Builders<WatchList>.Update.Combine();
-
-        // Conditionally sets fields based on null inputs
-        // String fields needs to be emtpty "" to remain the same. 
-        // if (!string.IsNullOrEmpty(updateList.ArtistName))
-        // {
-        //     update = update.Set(x => x.ArtistName, updateList.ArtistName);
-        // }
-        // if (!string.IsNullOrEmpty(updateList.ConcertName))
-        // {
-        //     update = update.Set(x => x.ConcertName, updateList.ConcertName);
-        // }
-        // if (!string.IsNullOrEmpty(updateList.Venue))
-        // {
-        //     update = update.Set(x => x.Venue, updateList.ConcertName);
-        // }
-        // // Price field can be 0 to keep the same value or null(empty)
-        // if (updateList.Price != 0)
-        // {
-        //     update = update.Set(x => x.Price, updateList.Price);
-        // }
-        if (updateList.IsAttending)
-        {
-            update = update.Set(x => x.IsAttending, updateList.IsAttending);
+        var update = Builders<WatchList>.Update.Set(x=>x.IsAttending, attendance);
+        
+        try {
+            await _watchListCollection.UpdateOneAsync(filter, update);
+        await _userService.UpdateUserWatchListAsync(userId, concertId, attendance);
+        } catch(MongoException ex) {
+            throw new Exception("Failed to update watch list: " + ex.Message);
         }
-        await _watchListCollection.UpdateOneAsync(filter, update);
+        
+        
     }
 
     // Remove WatchList
-    public async Task RemoveAsync(int concertId)
+    public async Task RemoveAsync(int userId, int concertId)
     {
         try
         {
             await _watchListCollection.DeleteOneAsync(x => x.WatchId == concertId);
+            await _userService.RemoveConcertAsync(userId, concertId);
         }
         catch (MongoException ex)
         {
