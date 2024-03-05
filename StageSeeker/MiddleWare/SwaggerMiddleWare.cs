@@ -21,7 +21,7 @@ public class SwaggerMiddleWare
         }
         if (context.Request.Path.StartsWithSegments("/profile") ||
         context.Request.Path.StartsWithSegments("/watchlist") ||
-        context.Request.Path.StartsWithSegments("/user"))
+        context.Request.Path.StartsWithSegments("/users"))
         {
             if (!auth)
             {

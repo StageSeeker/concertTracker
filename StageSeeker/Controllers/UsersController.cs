@@ -1,13 +1,14 @@
 using StageSeeker.Models;
 using StageSeeker.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace StageSeeker.Controllers;
 
 [ApiController]
 [Route("users")]
-public class UsersController(UsersService usersService, WatchListService watchListService) : ControllerBase 
+public class UsersController(UsersService usersService, WatchListService watchListService) : ControllerBase
 {
     private readonly UsersService _usersService = usersService;
     private readonly WatchListService _watchListService = watchListService;
@@ -18,13 +19,15 @@ public class UsersController(UsersService usersService, WatchListService watchLi
 
     // GET one user
     [HttpGet("{id}")]
-    public async Task<ActionResult<User>> Get(int id) 
+    public async Task<ActionResult<User>> Get(int id)
     {
         var user = await _usersService.GetAsync(id);
-        if (user is null) {
+        if (user is null)
+        {
             return NotFound();
-        } 
-        user.WatchList = await _watchListService.GetUserWatchAsync(id);
+        }
+        // You may want to fetch all watchlists for the user
+        user.WatchLists = await _watchListService.GetAllUserWatchListsAsync(id);
         return user;
     }
 
@@ -35,13 +38,14 @@ public class UsersController(UsersService usersService, WatchListService watchLi
         await _usersService.CreateAsync(new_user);
         return CreatedAtAction(nameof(Get), new { userId = new_user.UserId }, new_user);
     }
-    
+
     // DELETE a user
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete (int id)
+    public async Task<IActionResult> Delete(int id)
     {
         var user = await _usersService.GetAsync(id);
-        if (user is null) {
+        if (user is null)
+        {
             return NotFound();
         }
         await _usersService.RemoveAsync(id);

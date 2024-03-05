@@ -91,14 +91,11 @@ public IActionResult RedirectToProfile() {
       Sub = subClaim
     });
     }
-    string password = "password123sdsdfd"; // Example password, should be fetched securely
-    string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
       var new_user = new User {
         Username = name!,
         Email = email!,
-        Password = "password123sdsdfd",
         ProfilePic = profileImage!,
-        WatchList = new List<WatchList>()
+        WatchLists = new List<WatchList>()
       };
         await _userService.CreateAsync(new_user);
         return Ok("User Succesfully registed with StageSeeker");
