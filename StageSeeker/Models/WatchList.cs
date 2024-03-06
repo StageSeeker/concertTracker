@@ -4,11 +4,8 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace StageSeeker.Models;
 
 public class WatchList {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string? ObjectId {get; set;}
-
-    [BsonElement("watchlist_id")]
+    
+    [BsonElement("Favorite")]
     public string WatchlistId { get; set; } = Guid.NewGuid().ToString(); // Unique identifier for the watchlist
     
     [BsonElement("items")]

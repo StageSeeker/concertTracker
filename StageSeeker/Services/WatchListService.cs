@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace StageSeeker.Services;
 public class WatchListService
 {
-    private readonly IMongoCollection<WatchListItem> _watchListCollection;
+    private readonly IMongoCollection<WatchList> _watchListCollection;
+    private readonly IMongoCollection<WatchListItem> _watchListItemCollection;
     private readonly IMongoCollection<User> _usersCollection;
     private readonly ConcertService _concertService;
     private readonly UsersService _userService;
@@ -18,7 +19,8 @@ public class WatchListService
             // Access settings directly (no string checks)
             var mongoClient = new MongoClient(mongoDBSettings.Value.ConnectionString);
             var mongoDataBase = mongoClient.GetDatabase(mongoDBSettings.Value.DatabaseName);
-            _watchListCollection = mongoDataBase.GetCollection<WatchListItem>(mongoDBSettings.Value.WatchListCollectionName);
+            _watchListCollection = mongoDataBase.GetCollection<WatchList>(mongoDBSettings.Value.WatchListCollectionName);
+            _watchListItemCollection = mongoDataBase.GetCollection<WatchListItem>(mongoDBSettings.Value.WatchListCollectionName);
             _usersCollection = mongoDataBase.GetCollection<User>(mongoDBSettings.Value.UserCollectionName);
             _concertService = concertService;
             _userService = userService;
@@ -35,7 +37,22 @@ public class WatchListService
         try
         {
             var user = await _userService.GetAsync(userId);
-            return user?.WatchLists ?? new List<WatchList>();
+            if(user is null) {
+                throw new Exception("Failed to find user");
+            }
+            var watchlists = new List<WatchList>();
+            // return user?.WatchLists ?? new List<WatchList>();
+            foreach (var watchListId in user.WatchLists.Select(wl => wl.WatchlistId).Distinct())
+        {
+            var items = user.WatchLists.Where(wl => wl.WatchlistId == watchListId).Select(wl => wl.Items).FirstOrDefault();
+            watchlists.Add(new WatchList
+            {
+                WatchlistId = watchListId,
+                Items = items ?? new List<WatchListItem>()
+            });
+        }
+
+        return watchlists;
         }
         catch (MongoException ex)
         {
@@ -47,7 +64,7 @@ public class WatchListService
     {
         try
         {
-            var cursor = _watchListCollection.Find(x => x.UserId == userId);
+            var cursor = _watchListItemCollection.Find(x => x.UserId == userId);
             if (cursor is null)
             {
                 throw new Exception($"Failed to get watch list for user ID:{userId}");
@@ -89,7 +106,7 @@ public class WatchListService
     {
         try
         {
-            var existingConcert = await _watchListCollection.Find(
+            var existingConcert = await _watchListItemCollection.Find(
                 Builders<WatchListItem>.Filter.Eq(x => x.UserId, userId) &
                 Builders<WatchListItem>.Filter.Eq(x => x.ConcertId, concertId)).FirstOrDefaultAsync();
             if (existingConcert != null)
@@ -108,6 +125,7 @@ public class WatchListService
                 ConcertId = concertidToStr,
                 ArtistName = string.Join(", ", desiredConcert.Performers.Select(p => p.Artist)),
                 ConcertName = desiredConcert.Title,
+                WatchlistId = watchListId,
                 Venue = desiredConcert.Location.Name,
                 Time = desiredConcert.Date,
                 Price = desiredConcert.Prices.LowestPrice,
@@ -120,7 +138,7 @@ public class WatchListService
             
             // var existingWatchListId = await _watchListCollection.Find(Builders<WatchList>.Filter.Eq(x => x.WatchlistId, watchListId));
             
-            await _watchListCollection.InsertOneAsync(watchListItem);
+            await _watchListItemCollection.InsertOneAsync(watchListItem);
             await AddToUserWatchListAsync(userId, watchListId, watchListItem);
             return watchListItem;
         }
@@ -139,22 +157,15 @@ public class WatchListService
             {
                 throw new Exception($"User with ID {userId} not found.");
             }
+            var existingWatchList = user.WatchLists.FirstOrDefault(wl => wl.WatchlistId == watchListId);
+            if (existingWatchList == null)
+        {
+            existingWatchList = new WatchList();
+            existingWatchList.WatchlistId = watchListId;
+            user.WatchLists.Add(existingWatchList);
+        }
 
-            List<WatchList> newList = user.WatchLists;
-
-            foreach (var watchList in user.WatchLists)
-            {
-                if (watchList.WatchlistId != watchListId)
-                {
-                    // Assuming WatchLists is a List<WatchList>, create a new WatchList for each existing watchlist
-                    var newWatchList = new WatchList();
-                    newWatchList.Items.Add(newWatchListItem); // Add the new item to the new watchlist
-                    user.WatchLists.Add(newWatchList); // Add the new watchlist to the user's WatchLists
-                } else if (watchList.WatchlistId == watchListId) {
-                    watchList.Items.Add(newWatchListItem);
-                }
-
-            }
+        existingWatchList.Items.Add(newWatchListItem);
 
             /* 
             
@@ -199,7 +210,7 @@ public class WatchListService
 
         try
         {
-            await _watchListCollection.UpdateOneAsync(filter, update);
+            await _watchListItemCollection.UpdateOneAsync(filter, update);
             await _userService.UpdateUserWatchListAsync(userId, concertId, attendance);
         }
         catch (MongoException ex)
@@ -215,7 +226,7 @@ public class WatchListService
     {
         try
         {
-            await _watchListCollection.DeleteOneAsync(x => x.ConcertId == concertId);
+            await _watchListItemCollection.DeleteOneAsync(x => x.ConcertId == concertId);
             await _userService.RemoveConcertAsync(userId, concertId);
         }
         catch (MongoException ex)
@@ -225,7 +236,7 @@ public class WatchListService
         }
     }
 
-    internal async Task<List<WatchList>> GetAllWatchListsAsync()
+    internal Task<List<WatchList>> GetAllWatchListsAsync()
     {
         throw new NotImplementedException();
     }

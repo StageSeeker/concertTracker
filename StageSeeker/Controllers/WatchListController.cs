@@ -41,19 +41,23 @@ public class WatchListController : ControllerBase
         }
     }
 
-    [HttpPost("{userId}/{watchlistId}/{artist}/{concertId}")]
+    [HttpPost("{userId}/{watchListId}/{artist}/{concertId}")]
     public async Task<IActionResult> Post(int userId, string watchListId, string artist, string concertId)
     {
         try
         {
             var watchList = await _watchService.CreateAsync(userId, watchListId, artist, concertId);
-            return CreatedAtAction(nameof(Post), new { userId = userId, watchListId = watchList.ConcertId }, watchList);
+            if (watchList is null)
+            {
+                throw new Exception("Failed to create WatchList");
+            }
+            return StatusCode(StatusCodes.Status201Created, watchList);
         }
         catch (Exception ex)
         {
             // Handle errors gracefully
-            Console.Error.WriteLine("Error creating watch list: " + ex.Message);
-            return StatusCode(500, "Failed to create watch list: " + ex.Message);
+            // Console.Error.WriteLine("Error creating watch list: " + ex.Message);
+            return StatusCode(500, "Error: " + ex.Message);
         }
     }
 

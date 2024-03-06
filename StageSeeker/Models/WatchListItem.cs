@@ -11,6 +11,8 @@ public class WatchListItem {
     public int UserId {get; set;}
     [BsonElement("concert_id")]
     public string? ConcertId {get; set;}
+    [BsonElement("Favorite")]
+    public string? WatchlistId {get; set;}
     [BsonElement("artist_name")]
     public string ArtistName {get; set;} = null!;
     [BsonElement("concert_name")]
