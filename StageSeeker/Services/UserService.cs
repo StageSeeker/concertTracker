@@ -41,17 +41,7 @@ public class UsersService
         try
         {
             return await _usersCollection.Find(_ => true).ToListAsync();
-            // return await _usersCollection.Find(_ => true)
-            // .Project(user => new User
-            // {
-            //     Id = user.Id,
-            //     UserId = user.UserId,
-            //     Username = user.Username,
-            //     Email = user.Email,
-            //     ProfilePic = user.ProfilePic,
-            //     WatchLists = user.WatchLists
-            // })
-            // .ToListAsync();
+            
         }
         catch (MongoException ex)
         {

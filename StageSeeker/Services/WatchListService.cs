@@ -36,10 +36,7 @@ public class WatchListService
     {
         try
         {
-            var user = await _userService.GetAsync(userId);
-            if(user is null) {
-                throw new Exception("Failed to find user");
-            }
+            var user = await _userService.GetAsync(userId) ?? throw new Exception("Failed to find user");
             var watchlists = new List<WatchList>();
             // return user?.WatchLists ?? new List<WatchList>();
             foreach (var watchListId in user.WatchLists.Select(wl => wl.WatchlistId).Distinct())
@@ -48,7 +45,7 @@ public class WatchListService
             watchlists.Add(new WatchList
             {
                 WatchlistId = watchListId,
-                Items = items ?? new List<WatchListItem>()
+                Items = items ?? []
             });
         }
 
@@ -236,7 +233,7 @@ public class WatchListService
         }
     }
 
-    internal Task<List<WatchList>> GetAllWatchListsAsync()
+    internal Task<List<WatchList>> GetAllWatchListsAsync(int user_id)
     {
         throw new NotImplementedException();
     }

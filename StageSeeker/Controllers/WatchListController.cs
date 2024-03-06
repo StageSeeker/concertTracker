@@ -14,13 +14,6 @@ public class WatchListController : ControllerBase
         _watchService = watchService;
     }
 
-    [HttpGet]
-    public async Task<List<WatchList>> Get()
-    {
-        return await _watchService.GetAllWatchListsAsync();
-
-    }
-
     [HttpGet("{userId}")]
     public async Task<ActionResult<List<WatchListItem>>> Get(int userId)
     {
