@@ -114,7 +114,7 @@ public class AccountController : ControllerBase
         Username = name!,
         Email = email!,
         ProfilePic = profileImage!,
-        WatchList = []
+        WatchLists = []
       };
       await _userService.CreateAsync(new_user);
       return Ok($@"User {new_user.Username} successfully registered with StageSeeker. 
