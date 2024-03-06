@@ -64,7 +64,7 @@ public class AccountController : ControllerBase
 
     if (_userService is null)
     {
-      return StatusCode(500, "Cannot access userService");
+      return StatusCode(500, "Cannot access UserService");
     }
     if (name is null)
     {
@@ -80,7 +80,8 @@ public class AccountController : ControllerBase
         {
           Name = name,
           EmailAddress = email,
-          ProfileImage = profileImage
+          ProfileImage = profileImage,
+          WatchLists = existingUser.WatchLists
         });
       }
       else
@@ -114,7 +115,7 @@ public class AccountController : ControllerBase
         Username = name!,
         Email = email!,
         ProfilePic = profileImage!,
-        WatchList = []
+        WatchLists = []
       };
       await _userService.CreateAsync(new_user);
       return Ok($@"User {new_user.Username} successfully registered with StageSeeker. 

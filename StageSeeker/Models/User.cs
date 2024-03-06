@@ -11,7 +11,6 @@ public class User {
     [BsonElement("user_id")]
     public int UserId { get; set; }
 
-    
     [BsonElement("username")]
     public required string Username { get; set; }
 
@@ -20,6 +19,6 @@ public class User {
     
     public string ProfilePic {get; set;} = null!;
 
-    [BsonElement("WatchList")]
-    public List<WatchList> WatchList {get; set;} = new List<WatchList>();
+    [BsonElement("watch_lists")]
+    public List<WatchList> WatchLists {get; set;} = new List<WatchList>();
 }
