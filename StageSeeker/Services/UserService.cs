@@ -41,7 +41,7 @@ public class UsersService
         try
         {
             return await _usersCollection.Find(_ => true).ToListAsync();
-            
+
         }
         catch (MongoException ex)
         {
@@ -154,7 +154,7 @@ public class UsersService
     }
 
     // Helper Method to update WatchList
-    public async Task UpdateUserWatchListAsync(int userId, string watchListId, bool isAttending)
+    public async Task UpdateUserWatchListAsync(int userId, string watchListId, string concertId, bool isAttending)
     {
         try
         {
@@ -163,14 +163,35 @@ public class UsersService
                 Builders<User>.Filter.ElemMatch(x => x.WatchLists, wl => wl.WatchlistId == watchListId)
             );
 
-            var update = Builders<User>.Update
-                .Set($"WatchListsItem.$.{nameof(WatchListItem.IsAttending)}", isAttending);
-
-            var updateResult = await _usersCollection.UpdateOneAsync(filter, update);
-
-            if (updateResult.ModifiedCount == 0)
+            if (_usersCollection == null)
             {
-                throw new Exception($"Failed to update user watchlist: Entry with WatchlistId {watchListId} not found for user ID {userId}");
+                throw new Exception("The user collection is not initialized.");
+            }
+            using var cursor = await _usersCollection.FindAsync(filter);
+            var user = await cursor.FirstOrDefaultAsync();
+            var watchlist = user?.WatchLists?.FirstOrDefault(wl => wl.WatchlistId == watchListId);
+
+            if (watchlist != null)
+            {
+                foreach (var item in watchlist.Items)
+                {
+                    if (item.ConcertId == concertId)
+                    {
+                        item.IsAttending = isAttending;
+                        break;
+                    } else {
+                        throw new Exception($"Failed to find concert ID: {concertId}, for WatchList: {watchListId}");
+                    }
+                }
+
+                await _usersCollection.ReplaceOneAsync(
+                    filter: x => x.UserId == userId,
+                    replacement: user
+                );
+            }
+            else
+            {
+                throw new Exception($"Failed to update user watchlist: Watchlist with ID {watchListId} not found for user ID {userId}");
             }
         }
         catch (MongoException ex)
