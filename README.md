@@ -51,3 +51,8 @@ Test the API Endpoints by:
 - First Authenticating with the https://localhost/7290/login
 - This will redirect you to https://localhost/7290/swagger
 - All Endpoints will be listed on Swagger. 
+
+## API Documnetation
+View StageSeeker API Documentation here:
+https://app.swaggerhub.com/apis-docs/LavonSampson/StageSeeker/1.5
+
