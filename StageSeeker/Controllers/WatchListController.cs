@@ -54,8 +54,11 @@ public class WatchListController : ControllerBase
         }
     }
 
+
+    // Updates the attendence 
+
     [HttpPatch("{userId}/{concertId}")]
-    public async Task<IActionResult> Update(int userId, string concertId, [FromBody] bool updatedValues)
+    public async Task<IActionResult> Update(int userId, string watchlistId, string concertId, [FromBody] bool updatedValues)
     {
         try
         {
@@ -67,7 +70,7 @@ public class WatchListController : ControllerBase
             }
 
             // Call the service method with the updated fields
-            await _watchService.UpdateAsync(userId, concertId, updatedValues);
+            await _watchService.UpdateAsync(userId, watchlistId, concertId, updatedValues);
 
             return NoContent(); // 204 No Content
         }
@@ -79,17 +82,19 @@ public class WatchListController : ControllerBase
         }
     }
 
-    [HttpDelete("{userId}/{concertId}")]
-    public async Task<IActionResult> Delete(int userId, string concertId)
+
+    // Delete entire Watchlist
+    [HttpDelete("{userId}/{watchlistId}")]
+    public async Task<IActionResult> Delete(int userId, string watchlistId)
     {
         try
         {
-            var concert = await _watchService.GetOneUserConcertAsync(userId, concertId);
+            var concert = await _watchService.GetOneUserConcertAsync(userId, watchlistId);
             if (concert is null)
             {
-                throw new Exception($"Could not find concert on watch list with ID: {concertId}");
+                throw new Exception($"Could not find concert on watch list with ID: {watchlistId}");
             }
-            await _watchService.RemoveAsync(userId, concertId);
+            await _watchService.RemoveAsync(userId, watchlistId);
             return StatusCode(202);
         }
         catch (Exception ex)
@@ -97,4 +102,26 @@ public class WatchListController : ControllerBase
             return NotFound("Failed to delete concert: " + ex.Message);
         }
     }
+
+
+    // Delete Concert from Items array
+    [HttpDelete("{userId}/{watchlistId}/{concertId}")]
+    public async Task<IActionResult> Delete(int userId, string watchlistId, string concertId)
+    {
+        try
+        {
+            // Call the service method to remove the concert from the watchlist's items array
+            await _watchService.RemoveConcertFromWatchListAsync(userId, watchlistId, concertId);
+
+
+            return StatusCode(202); // 202 Accepted
+        }
+        catch (Exception ex)
+        {
+            return NotFound("Failed to delete concert: " + ex.Message);
+        }
+    }
+
+
+
 }
