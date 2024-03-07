@@ -9,9 +9,11 @@ namespace StageSeeker.Controllers;
 public class WatchListController : ControllerBase
 {
     private readonly WatchListService _watchService;
-    public WatchListController(WatchListService watchService)
+    private readonly UsersService _userService;
+    public WatchListController(WatchListService watchService, UsersService usersService)
     {
         _watchService = watchService;
+        _userService = usersService;
     }
 
     [HttpGet("{userId}")]
@@ -57,21 +59,15 @@ public class WatchListController : ControllerBase
 
     // Updates the attendence 
 
-    [HttpPatch("{userId}/{concertId}")]
-    public async Task<IActionResult> Update(int userId, string watchlistId, string concertId, [FromBody] bool updatedValues)
+    [HttpPatch("{userId}/{watchlistId}/{concertId}")]
+    public async Task<IActionResult> Update(int userId, string watchlistId, string concertId, [FromBody] bool attendance)
     {
         try
         {
-            var watchList = await _watchService.GetOneUserConcertAsync(userId, concertId);
-
-            if (watchList is null)
-            {
-                return NotFound();
+            if(_userService is null) {
+                throw new Exception("Failed to intialize User Service");
             }
-
-            // Call the service method with the updated fields
-            await _watchService.UpdateAsync(userId, watchlistId, concertId, updatedValues);
-
+            await _userService.UpdateUserWatchListAsync(userId, watchlistId, concertId, attendance);
             return NoContent(); // 204 No Content
         }
         catch (Exception ex)

@@ -1,8 +1,4 @@
-using System.Net;
 using Auth0.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Builder; 
-using StageSeeker.Controllers;
 using StageSeeker.MiddleWare;
 using StageSeeker.Models;
 using StageSeeker.Services;

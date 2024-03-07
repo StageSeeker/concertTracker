@@ -1,7 +1,6 @@
 using StageSeeker.Models;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
-using Microsoft.AspNetCore.Mvc;
 
 namespace StageSeeker.Services;
 public class WatchListService
@@ -38,7 +37,6 @@ public class WatchListService
         {
             var user = await _userService.GetAsync(userId) ?? throw new Exception("Failed to find user");
             var watchlists = new List<WatchList>();
-            // return user?.WatchLists ?? new List<WatchList>();
             foreach (var watchListId in user.WatchLists.Select(wl => wl.WatchlistId).Distinct())
             {
                 var items = user.WatchLists.Where(wl => wl.WatchlistId == watchListId).Select(wl => wl.Items).FirstOrDefault();
@@ -126,14 +124,12 @@ public class WatchListService
                 Venue = desiredConcert.Location.Name,
                 Time = desiredConcert.Date,
                 Price = desiredConcert.Prices.LowestPrice,
-                IsAttending = true // Initially set to false
+                IsAttending = true
             };
             if (watchListItem is null)
             {
                 throw new Exception($"Failed to create WatchList object for concert: {concertId}");
             }
-
-            // var existingWatchListId = await _watchListCollection.Find(Builders<WatchList>.Filter.Eq(x => x.WatchlistId, watchListId));
 
             await _watchListItemCollection.InsertOneAsync(watchListItem);
             await AddToUserWatchListAsync(userId, watchListId, watchListItem);
@@ -164,29 +160,6 @@ public class WatchListService
 
             existingWatchList.Items.Add(newWatchListItem);
 
-            /* 
-            
-            user {
-                watchlists:[
-                    objectid:
-                    watchlistid:1,
-                    items: [
-                        {newItems},
-                        {newItems},
-                        {newItems}
-                    ],
-                    objectid:
-                    watchlistid:2,
-                    items: [
-                        {newItems},
-                        {newItems}
-                    ],
-                    
-
-                ]
-            }
-            
-            */
             await _usersCollection.ReplaceOneAsync(
                 Builders<User>.Filter.Eq(x => x.UserId, userId),
                 user);
@@ -198,17 +171,12 @@ public class WatchListService
     }
 
     // Update WatchList
-    public async Task UpdateAsync(int userId, string watchlistId, string concertId, bool attendance)
+    public async Task UpdateAsync(int userId, string watchlistId, string objectId, bool attendance)
     {
-        var filter = Builders<WatchListItem>.Filter.And(
-        Builders<WatchListItem>.Filter.Eq(x => x.UserId, userId),
-        Builders<WatchListItem>.Filter.Eq(x => x.ConcertId, concertId));
-        var update = Builders<WatchListItem>.Update.Set(x => x.IsAttending, attendance);
-
+        
         try
         {
-            await _watchListItemCollection.UpdateOneAsync(filter, update);
-            await _userService.UpdateUserWatchListAsync(userId, concertId, attendance);
+            await _userService.UpdateUserWatchListAsync(userId, watchlistId, objectId, attendance);
         }
         catch (MongoException ex)
         {
